@@ -1,12 +1,16 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Menu, X, Home, Users, Phone } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Search, Menu, X, Home, Users, Phone, User, Settings, LogOut } from "lucide-react";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, profile, signOut } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/", icon: Home },
@@ -57,9 +61,53 @@ const Header = () => {
                 className="w-64 pl-10"
               />
             </div>
-            <Button variant="hero" size="sm">
-              Get Started
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-4">
+                {(profile?.role === 'agent' || profile?.role === 'admin') && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/admin">Dashboard</Link>
+                  </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || ''} />
+                        <AvatarFallback>
+                          {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium">{profile?.full_name || 'User'}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <Button asChild variant="default" size="sm">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -106,9 +154,19 @@ const Header = () => {
                   className="w-full pl-10"
                 />
               </div>
-              <Button variant="hero" className="w-full mt-3">
-                Get Started
-              </Button>
+              {user ? (
+                <div className="mt-3 p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => signOut()}>
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button asChild variant="default" className="w-full mt-3">
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}

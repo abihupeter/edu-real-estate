@@ -1,107 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import Header from "@/components/layout/Header";
+import PropertyCard from "@/components/property/PropertyCard";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Search, 
-  Filter, 
-  MapPin, 
-  Bed, 
-  Bath, 
-  Square, 
-  Heart, 
-  Eye, 
-  SlidersHorizontal 
+  Filter,
+  Home
 } from "lucide-react";
 
-const properties = [
-  {
-    id: 1,
-    title: "Modern Family Villa",
-    price: "KSh 45M",
-    type: "sale",
-    location: "Karen, Nairobi",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: "350 sqm",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop",
-    featured: true
-  },
-  {
-    id: 2,
-    title: "Luxury Apartment",
-    price: "KSh 80K/month",
-    type: "rent",
-    location: "Westlands, Nairobi",
-    bedrooms: 2,
-    bathrooms: 2,
-    area: "120 sqm",
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop",
-    featured: false
-  },
-  {
-    id: 3,
-    title: "Executive Townhouse",
-    price: "KSh 25M",
-    type: "sale",
-    location: "Kilimani, Nairobi",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: "200 sqm",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop",
-    featured: true
-  },
-  {
-    id: 4,
-    title: "Studio Apartment",
-    price: "KSh 35K/month",
-    type: "rent",
-    location: "Upperhill, Nairobi",
-    bedrooms: 1,
-    bathrooms: 1,
-    area: "60 sqm",
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop",
-    featured: false
-  },
-  {
-    id: 5,
-    title: "Commercial Office",
-    price: "KSh 120K/month",
-    type: "rent",
-    location: "CBD, Nairobi",
-    bedrooms: 0,
-    bathrooms: 2,
-    area: "180 sqm",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop",
-    featured: false
-  },
-  {
-    id: 6,
-    title: "Garden Maisonette",
-    price: "KSh 32M",
-    type: "sale",
-    location: "Lavington, Nairobi",
-    bedrooms: 3,
-    bathrooms: 3,
-    area: "280 sqm",
-    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop",
-    featured: true
-  },
-];
+interface Property {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  location: string;
+  property_type: 'house' | 'apartment' | 'commercial' | 'land';
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqft: number | null;
+  features: string[];
+  images: string[];
+  status: 'available' | 'sold' | 'rented';
+}
 
 const Properties = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [propertyType, setPropertyType] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const fetchProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('status', 'available')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProperties((data || []) as Property[]);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          property.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || property.type === filterType;
-    return matchesSearch && matchesType;
+    
+    const matchesType = propertyType === 'all' || property.property_type === propertyType;
+    
+    let matchesPrice = true;
+    if (priceRange !== 'all') {
+      const price = property.price;
+      switch (priceRange) {
+        case 'under-10m':
+          matchesPrice = price < 10000000;
+          break;
+        case '10m-25m':
+          matchesPrice = price >= 10000000 && price < 25000000;
+          break;
+        case '25m-50m':
+          matchesPrice = price >= 25000000 && price < 50000000;
+          break;
+        case 'over-50m':
+          matchesPrice = price >= 50000000;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesType && matchesPrice;
   });
 
   return (
@@ -115,66 +95,66 @@ const Properties = () => {
             Property Listings
           </h1>
           <p className="text-lg text-muted-foreground">
-            Browse our complete collection of properties for rent and sale
+            Browse our complete collection of available properties
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-card gradient-card rounded-2xl p-6 shadow-medium border border-border mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by property name or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <Card className="shadow-medium border border-border mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Search & Filter Properties
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by location or property name..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button variant="default">
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
             </div>
-            
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Property Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Properties</SelectItem>
-                <SelectItem value="rent">For Rent</SelectItem>
-                <SelectItem value="sale">For Sale</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              More Filters
-            </Button>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select value={propertyType} onValueChange={setPropertyType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Property Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="house">Houses</SelectItem>
+                  <SelectItem value="apartment">Apartments</SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="land">Land</SelectItem>
+                </SelectContent>
+              </Select>
 
-          {/* Quick Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-muted-foreground">Quick filters:</span>
-            <Button 
-              variant={filterType === "rent" ? "rent" : "outline"} 
-              size="sm"
-              onClick={() => setFilterType("rent")}
-            >
-              For Rent
-            </Button>
-            <Button 
-              variant={filterType === "sale" ? "sale" : "outline"} 
-              size="sm"
-              onClick={() => setFilterType("sale")}
-            >
-              For Sale
-            </Button>
-            <Button variant="outline" size="sm">Under KSh 20M</Button>
-            <Button variant="outline" size="sm">3+ Bedrooms</Button>
-          </div>
-        </div>
+              <Select value={priceRange} onValueChange={setPriceRange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Price Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Prices</SelectItem>
+                  <SelectItem value="under-10m">Under KSh 10M</SelectItem>
+                  <SelectItem value="10m-25m">KSh 10M - 25M</SelectItem>
+                  <SelectItem value="25m-50m">KSh 25M - 50M</SelectItem>
+                  <SelectItem value="over-50m">Over KSh 50M</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Results Count */}
+        {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-muted-foreground">
             Showing {filteredProperties.length} of {properties.length} properties
@@ -187,103 +167,57 @@ const Properties = () => {
               <SelectItem value="price-low">Price: Low to High</SelectItem>
               <SelectItem value="price-high">Price: High to Low</SelectItem>
               <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="featured">Featured First</SelectItem>
+              <SelectItem value="area">Area</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Property Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <Card key={property.id} className="group cursor-pointer transition-spring hover:shadow-large overflow-hidden">
-              <div className="relative">
-                <img
-                  src={property.image}
-                  alt={property.title}
-                  className="w-full h-48 object-cover transition-smooth group-hover:scale-105"
-                />
-                
-                {/* Overlay Actions */}
-                <div className="absolute top-3 right-3 flex space-x-2">
-                  <Button variant="ghost" size="icon" className="bg-background/80 hover:bg-background">
-                    <Heart className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="bg-background/80 hover:bg-background">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Badges */}
-                <div className="absolute top-3 left-3 flex space-x-2">
-                  {property.featured && (
-                    <Badge variant="secondary" className="bg-property-featured text-primary-foreground">
-                      Featured
-                    </Badge>
-                  )}
-                  <Badge 
-                    variant="outline" 
-                    className={`${
-                      property.type === "rent" 
-                        ? "bg-property-rent text-accent-foreground border-property-rent" 
-                        : "bg-property-sale text-secondary-foreground border-property-sale"
-                    }`}
-                  >
-                    For {property.type === "rent" ? "Rent" : "Sale"}
-                  </Badge>
-                </div>
-              </div>
-
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg text-foreground mb-2">
-                  {property.title}
-                </h3>
-                
-                <div className="flex items-center text-muted-foreground mb-3">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  <span className="text-sm">{property.location}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-3">
-                    {property.bedrooms > 0 && (
-                      <div className="flex items-center">
-                        <Bed className="w-4 h-4 mr-1" />
-                        {property.bedrooms}
-                      </div>
-                    )}
-                    <div className="flex items-center">
-                      <Bath className="w-4 h-4 mr-1" />
-                      {property.bathrooms}
-                    </div>
-                    <div className="flex items-center">
-                      <Square className="w-4 h-4 mr-1" />
-                      {property.area}
-                    </div>
+        {/* Properties Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <Card key={index} className="overflow-hidden">
+                <Skeleton className="h-48 w-full" />
+                <CardHeader>
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-8 w-full" />
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold text-primary">
-                    {property.price}
-                  </div>
-                  <Button 
-                    variant={property.type === "rent" ? "rent" : "sale"} 
-                    size="sm"
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Home className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No properties found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or check back later for new listings.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
 
         {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            Load More Properties
-          </Button>
-        </div>
+        {!loading && filteredProperties.length > 0 && filteredProperties.length >= 9 && (
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg">
+              Load More Properties
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );
