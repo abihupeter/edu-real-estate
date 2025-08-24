@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MapPin, Bed, Bath, Square, Heart, Phone, MessageCircle, Share2 } from 'lucide-react';
+import { MapPin, Bed, Bath, Square, Heart, Phone, MessageCircle, Share2, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Property {
@@ -27,28 +28,71 @@ interface PropertyCardProps {
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
   const { toast } = useToast();
 
   const handleCall = () => {
+    // Simulate calling functionality
     toast({
       title: "Calling Agent",
-      description: "This would initiate a call to the property agent.",
+      description: `Connecting you to the agent for ${property.title}. Phone: +254-700-123-456`,
     });
+    
+    // In a real app, this would initiate a phone call or open the dialer
+    console.log(`Calling agent for property: ${property.id}`);
   };
 
   const handleMessage = () => {
+    // Simulate messaging functionality
     toast({
       title: "Message Sent",
-      description: "Your inquiry has been sent to the agent.",
+      description: "Your inquiry has been sent to the property agent. They'll respond within 24 hours.",
     });
+    
+    // In a real app, this would open a chat interface or send an email
+    const message = `Hi, I'm interested in the property "${property.title}" located at ${property.location}. Could you please provide more details?`;
+    console.log(`Message for property ${property.id}:`, message);
   };
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    // Simulate sharing functionality
+    const shareData = {
+      title: property.title,
+      text: `Check out this amazing property: ${property.title} in ${property.location}`,
+      url: `${window.location.origin}/property/${property.id}`
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({
+          title: "Property Shared",
+          description: "Property details shared successfully!",
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(`${shareData.title} - ${shareData.url}`);
+        toast({
+          title: "Link Copied",
+          description: "Property link copied to clipboard!",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Share Failed",
+        description: "Could not share property. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleViewing = () => {
     toast({
-      title: "Link Copied",
-      description: "Property link copied to clipboard.",
+      title: "Viewing Scheduled",
+      description: "A viewing appointment request has been sent. The agent will contact you to confirm the time.",
     });
+    
+    console.log(`Scheduling viewing for property: ${property.id}`);
   };
 
   const formatPrice = (price: number) => {
@@ -59,23 +103,23 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     }).format(price);
   };
 
+  const displayImages = property.images.length > 0 ? property.images : [
+    `https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop`,
+    `https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop`,
+    `https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop`
+  ];
+
   return (
     <Card className="group hover:shadow-medium transition-spring overflow-hidden">
       <div className="relative">
-        {property.images.length > 0 ? (
-          <img 
-            src={property.images[0]} 
-            alt={property.title}
-            className="w-full h-48 object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.svg';
-            }}
-          />
-        ) : (
-          <div className="w-full h-48 bg-muted flex items-center justify-center">
-            <span className="text-muted-foreground">No Image</span>
-          </div>
-        )}
+        <img 
+          src={displayImages[0]} 
+          alt={property.title}
+          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop';
+          }}
+        />
         
         <div className="absolute top-2 left-2">
           <Badge variant={property.status === 'available' ? 'default' : 'secondary'}>
@@ -87,7 +131,13 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           variant="ghost"
           size="sm"
           className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-          onClick={() => setIsLiked(!isLiked)}
+          onClick={() => {
+            setIsLiked(!isLiked);
+            toast({
+              title: isLiked ? "Removed from favorites" : "Added to favorites",
+              description: isLiked ? "Property removed from your favorites" : "Property saved to your favorites",
+            });
+          }}
         >
           <Heart className={`w-4 h-4 ${isLiked ? 'fill-current text-red-500' : ''}`} />
         </Button>
@@ -179,11 +229,17 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             </Button>
           </div>
 
+          {/* Schedule Viewing Button */}
+          <Button onClick={handleScheduleViewing} variant="secondary" className="w-full">
+            <Calendar className="w-3 h-3 mr-2" />
+            Schedule Viewing
+          </Button>
+
           {/* View Details Dialog */}
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="ghost" className="w-full">
-                View Details
+                View Full Details
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -196,23 +252,39 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               
               <div className="space-y-6">
                 {/* Image Gallery */}
-                {property.images.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {property.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`${property.title} - Image ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-lg"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    ))}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img
+                      src={displayImages[selectedImage]}
+                      alt={property.title}
+                      className="w-full h-64 md:h-80 object-cover rounded-lg"
+                    />
                   </div>
-                )}
+                  
+                  {displayImages.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto">
+                      {displayImages.map((img, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImage(index)}
+                          className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+                            selectedImage === index 
+                              ? "border-primary" 
+                              : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt={`${property.title} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                {/* Property Info */}
+                {/* Property Info Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <div className="text-2xl font-bold text-primary">
@@ -250,17 +322,17 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 {property.description && (
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground">{property.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{property.description}</p>
                   </div>
                 )}
 
                 {/* Features */}
                 {property.features.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Features</h3>
-                    <div className="flex flex-wrap gap-2">
+                    <h3 className="text-lg font-semibold mb-2">Features & Amenities</h3>
+                    <div className="grid grid-cols-2 gap-2">
                       {property.features.map((feature, index) => (
-                        <Badge key={index} variant="outline">
+                        <Badge key={index} variant="outline" className="justify-start">
                           {feature}
                         </Badge>
                       ))}
@@ -277,6 +349,10 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                   <Button onClick={handleMessage} variant="outline" className="flex-1">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Send Message
+                  </Button>
+                  <Button onClick={handleScheduleViewing} variant="secondary" className="flex-1">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule Viewing
                   </Button>
                   <Button onClick={handleShare} variant="outline">
                     <Share2 className="w-4 h-4 mr-2" />

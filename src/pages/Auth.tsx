@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Home, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Home, Mail, Lock, User, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
@@ -71,14 +72,31 @@ const Auth = () => {
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     } else {
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
-      navigate('/');
+      // Automatically sign in after successful signup
+      const signInResult = await signIn(email, password);
+      
+      if (signInResult.error) {
+        toast({
+          title: "Account created successfully!",
+          description: "Please sign in with your new account.",
+        });
+      } else {
+        toast({
+          title: "Welcome to PropertyHub!",
+          description: "Your account has been created and you're now signed in.",
+        });
+        navigate('/');
+      }
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const fillDummyData = () => {
+    setEmail('demo@propertyhub.com');
+    setPassword('demo123');
+    setFullName('Demo User');
   };
 
   return (
@@ -93,6 +111,17 @@ const Auth = () => {
           <h1 className="text-3xl font-bold text-foreground">Welcome</h1>
           <p className="text-muted-foreground">Sign in to your account or create a new one</p>
         </div>
+
+        {/* Dummy Data Helper */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Try our demo account</span>
+            <Button variant="ghost" size="sm" onClick={fillDummyData}>
+              Fill Demo Data
+            </Button>
+          </AlertDescription>
+        </Alert>
 
         {/* Auth Card */}
         <Card className="shadow-medium">
