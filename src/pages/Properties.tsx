@@ -62,7 +62,11 @@ const Properties = () => {
     })();
 
     return matchesSearch && matchesType && matchesLocation && matchesPrice;
-  }) || [];
+  }).map(property => ({
+    ...property,
+    property_type: property.property_type as 'house' | 'apartment' | 'commercial' | 'land',
+    status: property.status as 'available' | 'sold' | 'rented'
+  })) || [];
 
   const clearFilters = () => {
     setSearchTerm('');
