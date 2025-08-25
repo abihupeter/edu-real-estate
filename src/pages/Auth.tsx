@@ -99,6 +99,11 @@ const Auth = () => {
     setFullName('Demo User');
   };
 
+  const fillAdminData = () => {
+    setEmail('admin');
+    setPassword('admin123#');
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
@@ -112,16 +117,28 @@ const Auth = () => {
           <p className="text-muted-foreground">Sign in to your account or create a new one</p>
         </div>
 
-        {/* Dummy Data Helper */}
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
-            <span>Try our demo account</span>
-            <Button variant="ghost" size="sm" onClick={fillDummyData}>
-              Fill Demo Data
-            </Button>
-          </AlertDescription>
-        </Alert>
+        {/* Auth Helpers */}
+        <div className="space-y-3">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Try our demo account</span>
+              <Button variant="ghost" size="sm" onClick={fillDummyData}>
+                Fill Demo Data
+              </Button>
+            </AlertDescription>
+          </Alert>
+          
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-orange-800">Admin login (username: admin)</span>
+              <Button variant="ghost" size="sm" onClick={fillAdminData} className="text-orange-600 hover:text-orange-800">
+                Fill Admin Data
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
 
         {/* Auth Card */}
         <Card className="shadow-medium">
@@ -148,13 +165,13 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">Email or Username</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         id="signin-email"
-                        type="email"
-                        placeholder="Enter your email"
+                        type="text"
+                        placeholder="Enter your email or username"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required

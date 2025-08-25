@@ -109,6 +109,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Handle hardcoded admin login
+    if (email === 'admin' && password === 'admin123#') {
+      // Create a mock admin session
+      const mockUser = {
+        id: 'admin-user-id',
+        email: 'admin@propertyhub.com',
+        user_metadata: { full_name: 'System Administrator' },
+        app_metadata: { provider: 'email', providers: ['email'] },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        aud: 'authenticated',
+        role: 'authenticated',
+        email_confirmed_at: new Date().toISOString(),
+        phone: null,
+        phone_confirmed_at: null,
+        last_sign_in_at: new Date().toISOString(),
+        confirmation_sent_at: null,
+        recovery_sent_at: null,
+        new_email: null,
+        invited_at: null,
+        action_link: null,
+        email_change_sent_at: null,
+        new_phone: null,
+        phone_change_sent_at: null,
+        reauthentication_sent_at: null,
+        identities: []
+      } as User;
+
+      const mockSession = {
+        user: mockUser,
+        access_token: 'mock-admin-token',
+        refresh_token: 'mock-admin-refresh',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer'
+      } as Session;
+
+      // Create mock admin profile
+      const mockProfile = {
+        id: 'admin-profile-id',
+        user_id: 'admin-user-id',
+        full_name: 'System Administrator',
+        email: 'admin@propertyhub.com',
+        phone: null,
+        role: 'admin' as const,
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Set state immediately for admin login
+      setUser(mockUser);
+      setSession(mockSession);
+      setProfile(mockProfile);
+      
+      return { error: null };
+    }
+
+    // Regular Supabase authentication for other users
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -117,6 +176,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Handle admin logout
+    if (user?.id === 'admin-user-id') {
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signOut();
     return { error };
   };
