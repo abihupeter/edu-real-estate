@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Home, 
   Building2, 
@@ -188,6 +189,42 @@ const services = [
 
 const ServicesSection = () => {
   const [selectedService, setSelectedService] = useState(null);
+  const { toast } = useToast();
+
+  const handleCall = (phone: string) => {
+    window.open(`tel:${phone}`, '_self');
+  };
+
+  const handleSendMessage = (phone: string) => {
+    window.open(`sms:${phone}`, '_self');
+  };
+
+  const handleScheduleMeeting = async (professionalName: string, professionalEmail: string, serviceTitle: string) => {
+    try {
+      // Create mailto link for scheduling meeting
+      const subject = encodeURIComponent(`Meeting Request - ${serviceTitle}`);
+      const body = encodeURIComponent(`Hello ${professionalName},
+
+I would like to schedule a meeting to discuss ${serviceTitle} services.
+
+Please let me know your availability.
+
+Best regards`);
+      
+      window.open(`mailto:${professionalEmail}?subject=${subject}&body=${body}`, '_self');
+      
+      toast({
+        title: "Email Client Opened",
+        description: "Your email client has been opened to schedule a meeting.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to open email client. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
@@ -328,15 +365,25 @@ const ServicesSection = () => {
                           </div>
                           
                           <div className="flex gap-3 mt-6">
-                            <Button className="flex-1">
+                            <Button 
+                              className="flex-1"
+                              onClick={() => handleCall(professional.phone)}
+                            >
                               <Phone className="w-4 h-4 mr-2" />
                               Call Now
                             </Button>
-                            <Button variant="outline" className="flex-1">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => handleSendMessage(professional.phone)}
+                            >
                               <Mail className="w-4 h-4 mr-2" />
                               Send Message
                             </Button>
-                            <Button variant="outline">
+                            <Button 
+                              variant="outline"
+                              onClick={() => handleScheduleMeeting(professional.name, professional.email, service.title)}
+                            >
                               <Calendar className="w-4 h-4 mr-2" />
                               Schedule Meeting
                             </Button>
